@@ -248,11 +248,16 @@ class PnpmModuleProvider(ModuleProvider):
     def _add_store_population_script(self) -> None:
         packages = {}
         for info in self._tarballs:
-            packages[info.tarball_name] = {
+            entry: dict[str, str] = {
                 'name': info.name,
                 'version': info.version,
                 'integrity_hex': info.integrity.digest,
             }
+            # If the version is a URL, pass the tarball URL so the store
+            # can be indexed by URL hash (how pnpm looks up tarball deps)
+            if info.version.startswith('http://') or info.version.startswith('https://'):
+                entry['tarball_url'] = info.version
+            packages[info.tarball_name] = entry
 
         manifest = {
             'store_version': self._store_version,

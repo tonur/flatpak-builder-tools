@@ -180,6 +180,18 @@ class PnpmModuleProvider(ModuleProvider):
         if exc_type is None:
             self._finalize()
 
+    @staticmethod
+    def _make_tarball_name(name: str, version: str) -> str:
+        """Create a safe tarball filename, handling URL-based versions."""
+        safe_name = name.replace('/', '__')
+        # If the version is a URL (e.g. from a GitHub tarball resolution),
+        # use a hash of the URL instead to avoid filesystem path issues.
+        if version.startswith('http://') or version.startswith('https://'):
+            import hashlib
+            url_hash = hashlib.sha256(version.encode()).hexdigest()[:16]
+            return f'{safe_name}-{url_hash}.tgz'
+        return f'{safe_name}-{version}.tgz'
+
     async def generate_package(self, package: Package) -> None:
         if self._store_version is None:
             self._store_version = _STORE_VERSION_BY_LOCKFILE[package.lockfile.version]
@@ -198,8 +210,7 @@ class PnpmModuleProvider(ModuleProvider):
                 )
                 integrity = await source.retrieve_integrity()
 
-            # Use name-version as filename; replace / in scoped names
-            tarball_name = f'{package.name.replace("/", "__")}-{package.version}.tgz'
+            tarball_name = self._make_tarball_name(package.name, package.version)
             self.gen.add_url_source(
                 url=source.resolved,
                 integrity=integrity,

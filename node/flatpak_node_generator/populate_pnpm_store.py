@@ -37,8 +37,8 @@ def populate_store(manifest_path: str, tarball_dir: str, store_dir: str) -> None
             integrity_hex=info['integrity_hex'],
             store=store,
             now=now,
+            tarball_url=info.get('tarball_url'),
         )
-
 
 def _process_tarball(
     *,
@@ -48,6 +48,7 @@ def _process_tarball(
     integrity_hex: str,
     store: str,
     now: int,
+    tarball_url: str | None = None,
 ) -> None:
     index_files: dict[str, dict[str, object]] = {}
 
@@ -86,20 +87,33 @@ def _process_tarball(
                 'size': len(data),
             }
 
+    index_data = {
+        'name': pkg_name,
+        'version': pkg_version,
+        'files': index_files,
+    }
+
+    # Standard index entry by integrity hash
     idx_prefix = integrity_hex[:2]
     idx_rest = integrity_hex[2:64]
     pkg_id = _SANITIZE_RE.sub('+', f'{pkg_name}@{pkg_version}')
     idx_dir = os.path.join(store, 'index', idx_prefix)
     os.makedirs(idx_dir, exist_ok=True)
     idx_path = os.path.join(idx_dir, f'{idx_rest}-{pkg_id}.json')
-    index_data = {
-        'name': pkg_name,
-        'version': pkg_version,
-        'files': index_files,
-    }
     with open(idx_path, 'w', encoding='utf-8') as out:
         json.dump(index_data, out)
 
+    # For tarball-URL packages, also create an index entry keyed by
+    # the URL hash — this is how pnpm looks up tarball deps without integrity
+    if tarball_url:
+        url_hash = hashlib.sha256(tarball_url.encode()).hexdigest()
+        url_idx_prefix = url_hash[:2]
+        url_idx_rest = url_hash[2:64]
+        url_idx_dir = os.path.join(store, 'index', url_idx_prefix)
+        os.makedirs(url_idx_dir, exist_ok=True)
+        url_idx_path = os.path.join(url_idx_dir, f'{url_idx_rest}-{pkg_id}.json')
+        with open(url_idx_path, 'w', encoding='utf-8') as out:
+            json.dump(index_data, out)
 
 if __name__ == '__main__':
     if len(sys.argv) != 4:

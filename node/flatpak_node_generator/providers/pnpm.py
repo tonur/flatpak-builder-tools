@@ -180,7 +180,7 @@ class PnpmModuleProvider(ModuleProvider):
         if exc_type is None:
             self._finalize()
 
-        async def generate_package(self, package: Package) -> None:
+    async def generate_package(self, package: Package) -> None:
         if self._store_version is None:
             self._store_version = _STORE_VERSION_BY_LOCKFILE[package.lockfile.version]
 

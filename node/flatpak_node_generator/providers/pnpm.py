@@ -180,7 +180,7 @@ class PnpmModuleProvider(ModuleProvider):
         if exc_type is None:
             self._finalize()
 
-    async def generate_package(self, package: Package) -> None:
+        async def generate_package(self, package: Package) -> None:
         if self._store_version is None:
             self._store_version = _STORE_VERSION_BY_LOCKFILE[package.lockfile.version]
 
@@ -189,19 +189,20 @@ class PnpmModuleProvider(ModuleProvider):
         if isinstance(source, ResolvedSource):
             assert source.resolved is not None
 
-            if source.integrity is None:
+            integrity = source.integrity
+            if integrity is None:
                 print(
-                    f'WARNING: skipping {package.name}@{package.version}: '
-                    'no integrity in lockfile (required for pnpm store)',
+                    f'INFO: {package.name}@{package.version}: '
+                    'no integrity in lockfile, fetching to compute...',
                     file=sys.stderr,
                 )
-                return
+                integrity = await source.retrieve_integrity()
 
             # Use name-version as filename; replace / in scoped names
             tarball_name = f'{package.name.replace("/", "__")}-{package.version}.tgz'
             self.gen.add_url_source(
                 url=source.resolved,
-                integrity=source.integrity,
+                integrity=integrity,
                 destination=self.tarball_dir / tarball_name,
             )
             self._tarballs.append(
@@ -209,7 +210,7 @@ class PnpmModuleProvider(ModuleProvider):
                     tarball_name=tarball_name,
                     name=package.name,
                     version=package.version,
-                    integrity=source.integrity,
+                    integrity=integrity,
                 )
             )
 

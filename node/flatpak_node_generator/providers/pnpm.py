@@ -253,8 +253,6 @@ class PnpmModuleProvider(ModuleProvider):
                 'version': info.version,
                 'integrity_hex': info.integrity.digest,
             }
-            # If the version is a URL, pass the tarball URL so the store
-            # can be indexed by URL hash (how pnpm looks up tarball deps)
             if info.version.startswith('http://') or info.version.startswith('https://'):
                 entry['tarball_url'] = info.version
             packages[info.tarball_name] = entry
@@ -278,7 +276,6 @@ class PnpmModuleProvider(ModuleProvider):
 
     def _add_pnpm_config(self) -> None:
         self.gen.add_command(f'echo "store-dir=$PWD/{self.store_dir}" >> .npmrc')
-
 
 class PnpmProviderFactory(ProviderFactory):
     class Options(NamedTuple):

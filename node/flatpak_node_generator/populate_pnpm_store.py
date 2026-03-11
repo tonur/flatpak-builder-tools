@@ -40,6 +40,7 @@ def populate_store(manifest_path: str, tarball_dir: str, store_dir: str) -> None
             tarball_url=info.get('tarball_url'),
         )
 
+
 def _process_tarball(
     *,
     tarball_path: str,
@@ -114,6 +115,7 @@ def _process_tarball(
         url_idx_path = os.path.join(url_idx_dir, f'{url_idx_rest}-{pkg_id}.json')
         with open(url_idx_path, 'w', encoding='utf-8') as out:
             json.dump(index_data, out)
+
 
 if __name__ == '__main__':
     if len(sys.argv) != 4:
